@@ -1,0 +1,8 @@
+{
+  "name": "hanu-planner-functions",
+  "version": "1.0.0",
+  "description": "Netlify Functions for Hanu-Planner",
+  "dependencies": {
+    "sqlite3": "^5.1.6"
+  }
+}

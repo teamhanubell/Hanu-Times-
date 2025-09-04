@@ -97,6 +97,17 @@ In your Netlify dashboard, add these environment variables:
 - `GOOGLE_GEMINI_API_KEY`: Your Google Gemini API key
 - `NODE_ENV`: `production`
 
+## .gitignore summary
+
+This project includes a comprehensive `.gitignore` to keep secrets and build artifacts out of source control:
+- Environment files: `.env`, `.env.local`, `.env.*.local`
+- Dependencies: `node_modules/` (root and functions)
+- Build outputs: `frontend/build/`, `coverage/`
+- SQLite databases: `*.db`, `*.sqlite`, `*.sqlite3`, `backend/timetable.db`
+- Logs and temp files: `*.log`, `logs/`, `.tmp/`, `tmp/`, `.temp/`
+- OS/IDE: `.DS_Store`, `Thumbs.db`, `.vscode/`, `.idea/`
+- Archives: `*.zip`, `*.tar`, `*.tar.gz`
+
 ## API Endpoints
 
 All endpoints are available at `/.netlify/functions/timetable`
@@ -204,6 +215,43 @@ Delete a timetable entry.
 **Example:**
 ```bash
 curl -X DELETE "https://your-app.netlify.app/.netlify/functions/timetable?id=1"
+```
+
+### POST /.netlify/functions/timetable/enhance
+Server-side AI enhancement for entries (improves subject names and suggests merges). This keeps your API key off the client.
+
+**Body:**
+```json
+{
+  "entries": [
+    {
+      "day": "Monday",
+      "start_time": "10:00",
+      "end_time": "12:00",
+      "type": "class",
+      "subject": "Math"
+    },
+    {
+      "day": "Wednesday",
+      "start_time": "10:00",
+      "end_time": "12:00",
+      "type": "class",
+      "subject": "Math"
+    }
+  ]
+}
+```
+
+**Example:**
+```bash
+curl -X POST "https://your-app.netlify.app/.netlify/functions/timetable/enhance" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "entries": [
+      {"day":"Monday","start_time":"10:00","end_time":"12:00","type":"class","subject":"Math"},
+      {"day":"Wednesday","start_time":"10:00","end_time":"12:00","type":"class","subject":"Math"}
+    ]
+  }'
 ```
 
 ## Natural Language Examples
