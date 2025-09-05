@@ -38,7 +38,7 @@ const parseNaturalText = (text) => {
     const doc = nlp(line);
     
     // Extract days - handle multiple days with &, and, comma
-    const dayPatterns = /\b(mon|monday|tue|tuesday|wed|wednesday|thu|thursday|fri|friday|sat|saturday|sun|sunday)\b/gi;
+    const dayPatterns = /\b(mon|monday|tue|tuesday|wed|wednesday|thu|thursday|fri|friday|sat|saturday|sun|sunday)\b/i; // remove global flag for consistent tests
     const dayMatches = line.match(dayPatterns) || [];
     
     // Normalize day names
@@ -86,16 +86,9 @@ const parseNaturalText = (text) => {
       endTime = `${end.toString().padStart(2, '0')}:${endMin.toString().padStart(2, '0')}`;
     }
     
-    // Extract subject - usually the first noun phrase before time or day
-    let subject = '';
-    const words = line.split(/\s+/);
-    for (let i = 0; i < words.length; i++) {
-      const word = words[i].toLowerCase();
-      if (!dayPatterns.test(word) && !word.match(/\d/) && !['to', 'and', '&', 'class', 'lab'].includes(word)) {
-        subject = words[i];
-        break;
-      }
-    }
+    // Extract subject via NLP noun detection
+    const doc = nlp(line);
+    let subject = doc.nouns().toSingular().out('text') || 'Untitled';
     
     // Determine type - lab/practical vs class
     const type = /\b(lab|practical|laboratory)\b/i.test(line) ? 'lab' : 'class';
@@ -178,10 +171,17 @@ const InputForm = ({ onAddEntries, disabled }) => {
 
   const handleNaturalSubmit = (e) => {
     e.preventDefault();
-    
+
+    // Validate parsed preview entries
     if (parsedPreview.length === 0) {
-      alert('No valid entries found in the text. Please check the format.');
+      alert('No valid entries found. Please check input.');
       return;
+    }
+    for (const entry of parsedPreview) {
+      if (!entry.day || entry.start_time >= entry.end_time) {
+        alert('Invalid entry detected. Ensure each entry has a valid day and time range.');
+        return;
+      }
     }
     
     onAddEntries(parsedPreview);

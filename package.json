@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "cd frontend && npm start",
     "build": "cd frontend && npm run build",
-    "install-all": "npm install && cd frontend && npm install"
+    "install-all": "npm install && cd frontend && npm install",
+    "start" : "concurrently \"npm run dev\" \"cd functions && netlify dev\""
   },
   "devDependencies": {
     "concurrently": "^7.6.0"
