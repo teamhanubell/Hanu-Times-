@@ -20,11 +20,7 @@ const callServerEnhance = async (entries) => {
   }
 };
 
-// Enhanced subject name suggestion using AI (delegated to server)
-const enhanceSubjectName = async (originalSubject) => originalSubject;
-
-// Smart slot merging suggestions using AI (delegated to server)
-const suggestSlotMerging = async (entries) => callServerEnhance(entries);
+// AI enhancement is performed server-side in one batch via callServerEnhance(entries)
 
 
 // Natural language parser for timetable entries
@@ -35,10 +31,8 @@ const parseNaturalText = (text) => {
   const lines = text.split(/[;\n]/).filter(line => line.trim());
   
   for (const line of lines) {
-    const doc = nlp(line);
-    
     // Extract days - handle multiple days with &, and, comma
-    const dayPatterns = /\b(mon|monday|tue|tuesday|wed|wednesday|thu|thursday|fri|friday|sat|saturday|sun|sunday)\b/i; // remove global flag for consistent tests
+    const dayPatterns = /\b(mon|monday|tue|tuesday|wed|wednesday|thu|thursday|fri|friday|sat|saturday|sun|sunday)\b/gi;
     const dayMatches = line.match(dayPatterns) || [];
     
     // Normalize day names
@@ -55,8 +49,8 @@ const parseNaturalText = (text) => {
     });
     
     // Extract times - handle various formats
-    const timePatterns = /(\d{1,2}):?(\d{2})?\s*(am|pm)?\s*(?:to|-|–|until)\s*(\d{1,2}):?(\d{2})?\s*(am|pm)?/gi;
-    const simpleTimePattern = /(\d{1,2})\s*(?:to|-|–|until)\s*(\d{1,2})/gi;
+    const timePatterns = /(\d{1,2}):?(\d{2})?\s*(am|pm)?\s*(?:to|-|–|until)\s*(\d{1,2}):?(\d{2})?\s*(am|pm)?/i;
+    const simpleTimePattern = /(\d{1,2})\s*(?:to|-|–|until)\s*(\d{1,2})/i;
     
     let startTime = '', endTime = '';
     
@@ -93,11 +87,9 @@ const parseNaturalText = (text) => {
     // Determine type - lab/practical vs class
     const type = /\b(lab|practical|laboratory)\b/i.test(line) ? 'lab' : 'class';
     
-    // Create entries for each day
-    const days = normalizedDays.length > 0 ? normalizedDays : ['Monday']; // Default to Monday
-    
-    for (const day of days) {
-      if (startTime && endTime) {
+    // Create entries only if valid days and times are detected
+    if (normalizedDays.length > 0 && startTime && endTime) {
+      normalizedDays.forEach((day) => {
         entries.push({
           day,
           start_time: startTime,
@@ -105,7 +97,7 @@ const parseNaturalText = (text) => {
           type,
           subject: subject || 'Untitled'
         });
-      }
+      });
     }
   }
   
@@ -199,27 +191,12 @@ const InputForm = ({ onAddEntries, disabled }) => {
   };
 
   const handleAIEnhancement = async () => {
-    if (parsedPreview.length === 0) return;
-    
+    if (!parsedPreview.length) return;
+
     setAiEnhancing(true);
     try {
-      // Enhance subject names
-      const enhancedEntries = await Promise.all(
-        parsedPreview.map(async (entry) => {
-          const enhancedSubject = await enhanceSubjectName(
-            entry.subject, 
-            `${entry.type} on ${entry.day} from ${entry.start_time} to ${entry.end_time}`
-          );
-          return {
-            ...entry,
-            subject: enhancedSubject || entry.subject
-          };
-        })
-      );
-      
-      // Suggest slot merging/optimization
-      const optimizedEntries = await suggestSlotMerging(enhancedEntries);
-      
+      // Batch enhance entries via serverless function
+      const optimizedEntries = await callServerEnhance(parsedPreview);
       setParsedPreview(optimizedEntries);
     } catch (error) {
       console.error('AI enhancement failed:', error);

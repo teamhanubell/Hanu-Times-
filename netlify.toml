@@ -1,9 +1,20 @@
 [build]
   publish = "frontend/build"
   command = "cd frontend && npm install && npm run build"
+  framework = "create-react-app"
 
 [functions]
   directory = "netlify/functions"
+
+[dev]
+  command = "cd frontend && npm start"
+  publish = "frontend/build"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
 
 [[redirects]]
   from = "/*"

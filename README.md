@@ -60,14 +60,11 @@ cp .env.example .env
 
 4. Start the development server:
 ```bash
-# Start frontend (React dev server)
+# Start both frontend and backend on single server
 npm run dev
-
-# In another terminal, start Netlify Functions locally
-npx netlify dev
 ```
 
-The app will be available at `http://localhost:3000` (frontend) and functions at `http://localhost:8888/.netlify/functions/`
+The app will be available at `http://localhost:8888` (both frontend and functions)
 
 ## Deployment
 

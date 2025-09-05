@@ -3,15 +3,18 @@
   "version": "1.0.0",
   "description": "Minimal timetable app with React frontend and Netlify Functions backend",
   "scripts": {
-    "dev": "cd frontend && npm start",
+    "dev": "netlify dev",
+    "dev-alt": "concurrently \"netlify functions:serve\" \"cd frontend && npm start\"",
     "build": "cd frontend && npm run build",
-    "install-all": "npm install && cd frontend && npm install",
-    "start" : "concurrently \"npm run dev\" \"cd functions && netlify dev\""
+    "start": "cd frontend && npm start",
+    "functions": "netlify functions:serve",
+    "install-all": "npm install && cd frontend && npm install && cd netlify/functions && npm install"
   },
   "devDependencies": {
     "concurrently": "^7.6.0"
   },
   "dependencies": {
+    "react-confetti": "^6.4.0",
     "sqlite3": "^5.1.7"
   }
 }

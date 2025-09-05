@@ -16,6 +16,18 @@ function App() {
     setLoading(true);
     try {
       const response = await fetch('/.netlify/functions/timetable');
+      
+      // Check if response is ok and content-type is JSON
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`Expected JSON but got: ${text.substring(0, 100)}...`);
+      }
+      
       const result = await response.json();
       
       if (result.success) {
@@ -24,7 +36,8 @@ function App() {
         setMessage(`Error: ${result.error?.message || 'Failed to fetch timetable'}`);
       }
     } catch (error) {
-      setMessage(`Error: ${error.message}`);
+      console.error('Fetch error:', error);
+      setMessage(`Connection Error: ${error.message}`);
     } finally {
       setLoading(false);
     }
