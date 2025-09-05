@@ -247,13 +247,71 @@ const handleDelete = async (id) => {
   }
 };
 
-// Handle AI Enhancement (server-side Gemini call)
+// Local processing for timetable entries
+const processTimetableEntries = (entries) => {
+  if (!Array.isArray(entries) || entries.length === 0) {
+    return entries;
+  }
+
+  // Create a map to group entries by day and subject
+  const entriesByDayAndSubject = {};
+  
+  // First pass: group entries by day and subject
+  entries.forEach(entry => {
+    if (!entry.day || !entry.subject) return;
+    
+    const key = `${entry.day.toLowerCase()}_${entry.subject.toLowerCase().trim()}`;
+    if (!entriesByDayAndSubject[key]) {
+      entriesByDayAndSubject[key] = [];
+    }
+    entriesByDayAndSubject[key].push({
+      ...entry,
+      start_time: entry.start_time || '',
+      end_time: entry.end_time || '',
+      type: entry.type || 'class'
+    });
+  });
+
+  // Second pass: process each group
+  const processedEntries = [];
+  
+  Object.values(entriesByDayAndSubject).forEach(group => {
+    if (group.length === 0) return;
+    
+    // Sort by start time
+    group.sort((a, b) => {
+      return a.start_time.localeCompare(b.start_time);
+    });
+    
+    // Simple merging of consecutive entries with the same subject and type
+    let current = { ...group[0] };
+    
+    for (let i = 1; i < group.length; i++) {
+      const entry = group[i];
+      
+      // If same subject and type, and end time of current matches start time of next
+      if (entry.subject === current.subject && 
+          entry.type === current.type && 
+          entry.end_time === group[i-1].end_time) {
+        // Extend the current entry's end time
+        current.end_time = entry.end_time;
+      } else {
+        // Push the current entry and start a new one
+        processedEntries.push({...current});
+        current = { ...entry };
+      }
+    }
+    
+    // Push the last current entry
+    processedEntries.push({...current});
+  });
+
+  return processedEntries;
+};
+
+// Handle timetable enhancement with local processing
 const handleEnhance = async (body) => {
   try {
-    if (!process.env.GOOGLE_GEMINI_API_KEY) {
-      return error(400, 'AI enhancement is unavailable: missing API key', 'MISSING_API_KEY');
-    }
-
     if (!body) {
       return error(400, 'Request body is required', 'MISSING_BODY');
     }
@@ -270,44 +328,12 @@ const handleEnhance = async (body) => {
       return error(400, 'entries array is required', 'INVALID_FORMAT');
     }
 
-    const prompt = `You are given an array of timetable entries in JSON with fields: day, start_time (HH:MM), end_time (HH:MM), type (class|lab), subject.\n` +
-      `Goal: Improve subject names for clarity and suggest merging of immediately consecutive identical entries if applicable.\n` +
-      `Rules: Return ONLY a JSON array with the same structure. Keep times and days unchanged unless merging requires adjusting end_time. Do not add commentary.\n` +
-      `Input: ${JSON.stringify(entries)}`;
-
-    const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.GOOGLE_GEMINI_API_KEY}`
-      },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2, topK: 1, topP: 1, maxOutputTokens: 512 }
-      })
-    });
-
-    if (!resp.ok) {
-      const text = await resp.text();
-      return error(resp.status, `AI service error: ${text.substring(0, 200)}`, 'AI_SERVICE_ERROR');
-    }
-
-    const payload = await resp.json();
-    const outText = payload?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-    let optimized = entries;
-    try {
-      const parsed = JSON.parse(outText);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        optimized = parsed;
-      }
-    } catch (_) {
-      // If parsing fails, return original entries
-    }
-
-    return success({ entries: optimized }, 'AI enhancement complete');
+    // Process entries locally
+    const optimized = processTimetableEntries(entries);
+    
+    return success({ entries: optimized }, 'Timetable processing complete');
   } catch (err) {
     console.error('ENHANCE error:', err);
-    return error(500, 'AI enhancement failed', 'AI_ERROR');
+    return error(500, 'Timetable processing failed', 'PROCESSING_ERROR');
   }
 };

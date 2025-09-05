@@ -1,26 +1,67 @@
 import React, { useState } from 'react';
 import nlp from 'compromise';
 
-// Server-side AI enhancement via Netlify Function (keeps API key off the client)
-const callServerEnhance = async (entries) => {
-  try {
-    const response = await fetch('/.netlify/functions/timetable/enhance', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entries })
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success) {
-      throw new Error(data?.error?.message || 'AI enhancement failed');
-    }
-    return data.data.entries;
-  } catch (error) {
-    console.error('Enhance API error:', error);
-    return entries; // fall back to original
+// Local processing for timetable entries
+const processTimetableEntries = (entries) => {
+  if (!Array.isArray(entries) || entries.length === 0) {
+    return entries;
   }
-};
 
-// AI enhancement is performed server-side in one batch via callServerEnhance(entries)
+  // Create a map to group entries by day and subject
+  const entriesByDayAndSubject = {};
+  
+  // First pass: group entries by day and subject
+  entries.forEach(entry => {
+    if (!entry.day || !entry.subject) return;
+    
+    const key = `${entry.day.toLowerCase()}_${entry.subject.toLowerCase().trim()}`;
+    if (!entriesByDayAndSubject[key]) {
+      entriesByDayAndSubject[key] = [];
+    }
+    entriesByDayAndSubject[key].push({
+      ...entry,
+      start_time: entry.start_time || '',
+      end_time: entry.end_time || '',
+      type: entry.type || 'class'
+    });
+  });
+
+  // Second pass: process each group
+  const processedEntries = [];
+  
+  Object.values(entriesByDayAndSubject).forEach(group => {
+    if (group.length === 0) return;
+    
+    // Sort by start time
+    group.sort((a, b) => {
+      return a.start_time.localeCompare(b.start_time);
+    });
+    
+    // Simple merging of consecutive entries with the same subject and type
+    let current = { ...group[0] };
+    
+    for (let i = 1; i < group.length; i++) {
+      const entry = group[i];
+      
+      // If same subject and type, and end time of current matches start time of next
+      if (entry.subject === current.subject && 
+          entry.type === current.type && 
+          entry.end_time === group[i-1].end_time) {
+        // Extend the current entry's end time
+        current.end_time = entry.end_time;
+      } else {
+        // Push the current entry and start a new one
+        processedEntries.push({...current});
+        current = { ...entry };
+      }
+    }
+    
+    // Push the last current entry
+    processedEntries.push({...current});
+  });
+
+  return processedEntries.length > 0 ? processedEntries : entries;
+};
 
 
 // Natural language parser for timetable entries
@@ -195,8 +236,8 @@ const InputForm = ({ onAddEntries, disabled }) => {
 
     setAiEnhancing(true);
     try {
-      // Batch enhance entries via serverless function
-      const optimizedEntries = await callServerEnhance(parsedPreview);
+      // Process entries locally
+      const optimizedEntries = processTimetableEntries(parsedPreview);
       setParsedPreview(optimizedEntries);
     } catch (error) {
       console.error('AI enhancement failed:', error);

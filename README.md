@@ -1,124 +1,99 @@
-# Hanu-Planner
+# 🎓 Hanu-Planner
 
-A minimal, clean, production-ready timetable app built with React frontend and Netlify Functions backend.
+**AI-Assisted Offline Timetable Planner with Local Data Caching**
 
-## Features
+A professional, stable offline timetable chatbot that uses local raw data and caching to generate optimal academic schedules without any dependency on external APIs.
 
-- **Dual Input Modes**: Structured form inputs and natural language text parsing
-- **Natural Language Processing**: Parse entries like "Maths class Mon & Wed 10 to 12"
-- **Responsive Design**: Desktop grid view and mobile card layout
-- **Real-time Validation**: Input validation with helpful error messages
-- **Caching**: In-memory cache for improved performance
-- **CRUD Operations**: Create, read, update, and delete timetable entries
-- **Conflict Detection**: Prevents overlapping schedule entries
+## ✨ Features
 
-## Tech Stack
+### 🤖 **Offline AI Assistant**
+- Natural language processing for course and session management
+- Intelligent timetable generation with conflict resolution
+- Smart scheduling suggestions and optimizations
+- Completely offline - no API keys required
 
-- **Frontend**: React, compromise.js for NLP
-- **Backend**: Node.js + Express (Netlify Functions)
-- **Database**: SQLite
-- **Deployment**: Netlify
-- **Caching**: In-memory cache (node-cache alternative)
+### 📊 **Comprehensive Data Management**
+- SQLite database for reliable data persistence
+- JSON caching for lightning-fast lookups
+- Graceful fallbacks and error recovery
+- Data persists across sessions with automatic improvements
 
-## Environment Variables
+### 🎯 **Smart Timetable Generation**
+- Conflict-free schedule generation
+- Respects course priorities and constraints
+- Optimizes for balanced daily workload
+- Handles labs, lectures, tutorials, and seminars
 
-Create a `.env` file in the root directory:
+### 🎨 **Modern UI/UX**
+- Clean, card-based interface inspired by Amazon Q
+- Responsive design for all devices
+- Real-time chat interface with AI assistant
+- Professional dashboard with analytics
 
-```bash
-export GOOGLE_GEMINI_API_KEY="AIzaSyAWNPb5bgI0HgO9Sgsbc4BLuzqD0tzlQ54"
-NODE_ENV=development
-LOG_LEVEL=info
+## 🏗️ Architecture
+
+### **Database Design**
+- **Users**: Basic user information and preferences
+- **Courses**: Academic courses with priorities and metadata
+- **Sessions**: Individual class/lab sessions with scheduling details
+- **Constraints**: User availability and scheduling rules
+- **Cache**: High-performance data caching layer
+- **Chat History**: Conversation persistence for continuous learning
+
+### **Tech Stack**
+- **Frontend**: React 18 with modern hooks and context
+- **Backend**: Node.js + Express with RESTful APIs
+- **Database**: SQLite for reliability and portability
+- **Cache**: Dual-layer (memory + database) caching
+- **NLP**: Compromise.js for natural language processing
+- **UI**: Custom CSS with modern design principles
+
+## 📁 Project Structure
+
+```
+hanu-planner/
+├── 📂 backend/                 # Express server and business logic
+│   ├── 📂 models/             # Database models and schemas
+│   │   └── Database.js        # Main database class
+│   ├── 📂 services/           # Core business services
+│   │   ├── ChatBot.js         # AI assistant with NLP
+│   │   ├── TimetableGenerator.js  # Schedule optimization
+│   │   └── CacheManager.js    # Caching system
+│   ├── server.js              # Express server setup
+│   └── package.json           # Backend dependencies
+├── 📂 frontend/               # React application
+│   ├── 📂 src/
+│   │   ├── 📂 components/     # React components
+│   │   │   ├── Dashboard.js   # Main dashboard
+│   │   │   ├── ChatBot.js     # Chat interface
+│   │   │   ├── TimetableView.js   # Schedule visualization
+│   │   │   ├── CoursesManager.js  # Course management
+│   │   │   └── ConstraintsManager.js  # Scheduling constraints
+│   │   ├── App.js             # Main application
+│   │   └── App.css            # Modern styling
+│   └── package.json           # Frontend dependencies
+├── 📂 db/                     # Database files
+│   ├── schema.sql             # Complete database schema
+│   └── hanuplanner.db         # SQLite database (auto-created)
+├── 📂 cache/                  # Cache directory (auto-created)
+├── README.md                  # This file
+└── package.json               # Root configuration
 ```
 
-**⚠️ Security Warning**: Rotate this API key after testing and never commit it to source control.
-
-## Local Development
+## 🚀 Quick Start
 
 ### Prerequisites
-
-- Node.js 16+ and npm
-- Git
+- **Node.js** 16.0.0 or higher
+- **npm** or **yarn**
+- **No API keys required!** 🎉
 
 ### Installation
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd hanuplanner
-```
-
-2. Install dependencies:
-```bash
-npm run install-all
-```
-
-3. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your actual values
-```
-
-4. Start the development server:
-```bash
-# Start both frontend and backend on single server
-npm run dev
-```
-
-The app will be available at `http://localhost:8888` (both frontend and functions)
-
-## Deployment
-
-### Netlify Deployment
-
-1. **Automatic Deployment** (Recommended):
-   - Connect your GitHub repository to Netlify
-   - Set build command: `cd frontend && npm install && npm run build`
-   - Set publish directory: `frontend/build`
-   - Add environment variables in Netlify dashboard
-
-2. **Manual Deployment**:
-```bash
-# Install Netlify CLI
-npm install -g netlify-cli
-
-# Build the project
-cd frontend && npm run build
-
-# Deploy
-netlify deploy --prod --dir=frontend/build
-```
-
-### Environment Variables on Netlify
-
-In your Netlify dashboard, add these environment variables:
-- `GOOGLE_GEMINI_API_KEY`: Your Google Gemini API key
-- `NODE_ENV`: `production`
-
-## .gitignore summary
-
-This project includes a comprehensive `.gitignore` to keep secrets and build artifacts out of source control:
-- Environment files: `.env`, `.env.local`, `.env.*.local`
-- Dependencies: `node_modules/` (root and functions)
-- Build outputs: `frontend/build/`, `coverage/`
-- SQLite databases: `*.db`, `*.sqlite`, `*.sqlite3`, `backend/timetable.db`
-- Logs and temp files: `*.log`, `logs/`, `.tmp/`, `tmp/`, `.temp/`
-- OS/IDE: `.DS_Store`, `Thumbs.db`, `.vscode/`, `.idea/`
-- Archives: `*.zip`, `*.tar`, `*.tar.gz`
-
-## API Endpoints
-
-All endpoints are available at `/.netlify/functions/timetable`
-
-### GET /.netlify/functions/timetable
-Get all timetable entries or filter by day.
-
-**Query Parameters:**
-- `day` (optional): Filter by specific day (e.g., "Monday")
-
-**Example:**
-```bash
-curl "https://your-app.netlify.app/.netlify/functions/timetable"
-curl "https://your-app.netlify.app/.netlify/functions/timetable?day=Monday"
+1. **Clone and setup**
+   ```bash
+   git clone <repository-url>
+   cd hanu-planner
+   npm run setup
 ```
 
 **Response:**
@@ -317,79 +292,13 @@ The app can parse natural language input and convert it to structured entries:
 - [ ] Validation rejects invalid times/days
 - [ ] Overlap detection prevents conflicts
 
-### ✅ Caching
-- [ ] Repeat GET requests use cached data
-- [ ] POST/PUT/DELETE operations invalidate cache
-- [ ] Cache expires after TTL period
-
 ### ✅ Error Handling
 - [ ] Invalid JSON returns 400 error
 - [ ] Missing required fields return validation errors
 - [ ] Non-existent entry ID returns 404
 - [ ] Overlapping entries return 409 conflict
 - [ ] CORS headers present in all responses
-
-### ✅ Deployment
-- [ ] Netlify build completes successfully
-- [ ] Frontend serves correctly from CDN
-- [ ] Backend functions respond to API calls
-- [ ] Environment variables work in production
-- [ ] Database persists data between function calls
-
-## File Structure
-
-```
-hanuplanner/
-├── frontend/
-│   ├── package.json
-│   ├── public/
-│   │   └── index.html
-│   └── src/
-│       ├── App.js
-│       ├── index.js
-│       ├── styles.css
-│       └── components/
-│           ├── InputForm.js
-│           └── Timetable.js
-├── backend/
-│   ├── db.js
-│   └── cache.js
-├── netlify/
-│   └── functions/
-│       ├── package.json
-│       └── timetable.js
-├── netlify.toml
-├── package.json
-├── .env.example
-└── README.md
-```
-
-## Troubleshooting
-
-### SQLite Issues on Netlify
-
-If SQLite doesn't work in the serverless environment, consider these alternatives:
-
-1. **Render.com**: Deploy backend as a regular Node.js service
-2. **PlanetScale**: MySQL-compatible serverless database
-3. **MongoDB Atlas**: Free tier with good serverless support
-
-### Common Issues
-
-1. **CORS Errors**: Ensure all API responses include CORS headers
-2. **Build Failures**: Check that all dependencies are in the correct package.json files
-3. **Function Timeouts**: Optimize database queries and add proper error handling
-4. **Cache Issues**: Clear cache manually if data seems stale
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly using the checklist above
-5. Submit a pull request
-
-## License
+- [ ] Server-side error logging for debugging
 
 MIT License - see LICENSE file for details.
 

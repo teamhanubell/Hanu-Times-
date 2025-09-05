@@ -1,171 +1,178 @@
 import React, { useState, useEffect } from 'react';
-import InputForm from './components/InputForm';
-import Timetable from './components/Timetable';
+import './App.css';
+import ChatBot from './components/ChatBot';
+import Dashboard from './components/Dashboard';
+import TimetableView from './components/TimetableView';
+import CoursesManager from './components/CoursesManager';
+import ConstraintsManager from './components/ConstraintsManager';
+import Sidebar from './components/Sidebar';
+import Header from './components/Header';
+import LoadingSpinner from './components/LoadingSpinner';
+import NotificationToast from './components/NotificationToast';
 
 function App() {
-  const [timetableData, setTimetableData] = useState([]);
+  const [currentView, setCurrentView] = useState('dashboard');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [notification, setNotification] = useState(null);
+  const [userData, setUserData] = useState({
+    courses: [],
+    sessions: [],
+    constraints: [],
+    timetable: null
+  });
 
-  // Fetch timetable data on component mount
+  const API_BASE = process.env.NODE_ENV === 'development' ? 'http://localhost:5000/api' : '/api';
+
   useEffect(() => {
-    fetchTimetable();
-  }, []);
+    loadInitialData();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetchTimetable = async () => {
+  const loadInitialData = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/.netlify/functions/timetable');
-      
-      // Check if response is ok and content-type is JSON
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        throw new Error(`Expected JSON but got: ${text.substring(0, 100)}...`);
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        setTimetableData(result.data || []);
-      } else {
-        setMessage(`Error: ${result.error?.message || 'Failed to fetch timetable'}`);
-      }
+      await Promise.all([
+        loadCourses(),
+        loadSessions(),
+        loadConstraints(),
+        loadTimetable()
+      ]);
     } catch (error) {
-      console.error('Fetch error:', error);
-      setMessage(`Connection Error: ${error.message}`);
+      showNotification('Failed to load initial data', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddEntries = async (entries) => {
-    setLoading(true);
+  const loadCourses = async () => {
     try {
-      const response = await fetch('/.netlify/functions/timetable', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ entries }),
-      });
-      
+      const response = await fetch(`${API_BASE}/courses/1`);
       const result = await response.json();
-      
       if (result.success) {
-        setMessage('Entries added successfully!');
-        await fetchTimetable(); // Refresh data
-      } else {
-        setMessage(`Error: ${result.error?.message || 'Failed to add entries'}`);
+        setUserData(prev => ({ ...prev, courses: result.data }));
       }
     } catch (error) {
-      setMessage(`Error: ${error.message}`);
-    } finally {
-      setLoading(false);
+      console.error('Load courses error:', error);
     }
   };
 
-  const handleUpdateEntry = async (id, updatedEntry) => {
-    setLoading(true);
+  const loadSessions = async () => {
     try {
-      const response = await fetch(`/.netlify/functions/timetable?id=${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updatedEntry),
-      });
-      
+      const response = await fetch(`${API_BASE}/sessions/1`);
       const result = await response.json();
-      
       if (result.success) {
-        setMessage('Entry updated successfully!');
-        await fetchTimetable(); // Refresh data
-      } else {
-        setMessage(`Error: ${result.error?.message || 'Failed to update entry'}`);
+        setUserData(prev => ({ ...prev, sessions: result.data }));
       }
     } catch (error) {
-      setMessage(`Error: ${error.message}`);
-    } finally {
-      setLoading(false);
+      console.error('Load sessions error:', error);
     }
   };
 
-  const handleDeleteEntry = async (id) => {
-    setLoading(true);
+  const loadConstraints = async () => {
     try {
-      const response = await fetch(`/.netlify/functions/timetable?id=${id}`, {
-        method: 'DELETE',
-      });
-      
+      const response = await fetch(`${API_BASE}/constraints/1`);
       const result = await response.json();
-      
       if (result.success) {
-        setMessage('Entry deleted successfully!');
-        await fetchTimetable(); // Refresh data
-      } else {
-        setMessage(`Error: ${result.error?.message || 'Failed to delete entry'}`);
+        setUserData(prev => ({ ...prev, constraints: result.data }));
       }
     } catch (error) {
-      setMessage(`Error: ${error.message}`);
-    } finally {
-      setLoading(false);
+      console.error('Load constraints error:', error);
     }
   };
 
-  const handleClearAll = async () => {
-    if (!window.confirm('Are you sure you want to clear all entries?')) {
-      return;
-    }
-    
-    setLoading(true);
+  const loadTimetable = async () => {
     try {
-      // Delete all entries one by one
-      for (const entry of timetableData) {
-        await fetch(`/.netlify/functions/timetable?id=${entry.id}`, {
-          method: 'DELETE',
-        });
+      const response = await fetch(`${API_BASE}/timetable/1`);
+      const result = await response.json();
+      if (result.success) {
+        setUserData(prev => ({ ...prev, timetable: result.data }));
       }
-      setMessage('All entries cleared successfully!');
-      await fetchTimetable(); // Refresh data
     } catch (error) {
-      setMessage(`Error: ${error.message}`);
-    } finally {
-      setLoading(false);
+      console.error('Load timetable error:', error);
+    }
+  };
+
+  const showNotification = (message, type = 'info') => {
+    setNotification({ message, type, id: Date.now() });
+  };
+
+  const hideNotification = () => {
+    setNotification(null);
+  };
+
+  const handleDataUpdate = async (type) => {
+    switch (type) {
+      case 'courses':
+        await loadCourses();
+        break;
+      case 'sessions':
+        await loadSessions();
+        break;
+      case 'constraints':
+        await loadConstraints();
+        break;
+      case 'timetable':
+        await loadTimetable();
+        break;
+      case 'all':
+        await loadInitialData();
+        break;
+      default:
+        break;
+    }
+  };
+
+  const renderCurrentView = () => {
+    const commonProps = {
+      userData,
+      onDataUpdate: handleDataUpdate,
+      showNotification,
+      apiBase: API_BASE
+    };
+
+    switch (currentView) {
+      case 'dashboard':
+        return <Dashboard {...commonProps} />;
+      case 'timetable':
+        return <TimetableView {...commonProps} />;
+      case 'courses':
+        return <CoursesManager {...commonProps} />;
+      case 'constraints':
+        return <ConstraintsManager {...commonProps} />;
+      case 'chat':
+        return <ChatBot {...commonProps} />;
+      default:
+        return <Dashboard {...commonProps} />;
     }
   };
 
   return (
     <div className="app">
-      <header className="app-header">
-        <h1>Hanu-Planner</h1>
-        <p>Minimal timetable management</p>
-      </header>
-
-      {message && (
-        <div className={`message ${message.startsWith('Error') ? 'error' : 'success'}`}>
-          {message}
-          <button onClick={() => setMessage('')} className="close-btn">×</button>
-        </div>
-      )}
-
-      {loading && <div className="loading">Loading...</div>}
-
-      <main className="app-main">
-        <InputForm onAddEntries={handleAddEntries} disabled={loading} />
-        <Timetable 
-          data={timetableData}
-          onUpdateEntry={handleUpdateEntry}
-          onDeleteEntry={handleDeleteEntry}
-          onClearAll={handleClearAll}
-          onRefresh={fetchTimetable}
-          disabled={loading}
+      <Header 
+        currentView={currentView}
+        onViewChange={setCurrentView}
+        userData={userData}
+      />
+      
+      <div className="app-body">
+        <Sidebar 
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          userData={userData}
         />
-      </main>
+        
+        <main className="main-content">
+          {loading && <LoadingSpinner />}
+          {renderCurrentView()}
+        </main>
+      </div>
+
+      {notification && (
+        <NotificationToast
+          message={notification.message}
+          type={notification.type}
+          onClose={hideNotification}
+        />
+      )}
     </div>
   );
 }

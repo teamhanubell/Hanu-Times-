@@ -1,0 +1,23 @@
+{
+  "name": "hanu-planner-backend",
+  "version": "2.0.0",
+  "description": "Backend server for Hanu-Planner with SQLite database and AI chatbot",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "init-db": "node -e \"const db = require('./models/Database'); const d = new db(); d.initialize().then(() => { console.log('Database initialized'); process.exit(0); }).catch(console.error);\""
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "sqlite3": "^5.1.7",
+    "compromise": "^14.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
